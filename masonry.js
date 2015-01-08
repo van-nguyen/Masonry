@@ -139,7 +139,7 @@ function masonryDefinition( Outlayer, getSize ) {
     };
 
     // apply setHeight to necessary columns
-    var setHeight = minimumY + item.size.outerHeight;
+    var setHeight = minimumY + item.size.outerHeight + this.gutter;
     var setSpan = this.cols + 1 - colGroup.length;
     for ( var i = 0; i < setSpan; i++ ) {
       this.colYs[ shortColIndex + i ] = setHeight;
