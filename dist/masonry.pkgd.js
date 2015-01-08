@@ -147,7 +147,7 @@ if ( typeof define === 'function' && define.amd ) {
 })( window );
 
 /*!
- * eventie v1.0.5
+ * eventie v1.0.6
  * event binding helper
  *   eventie.bind( elem, 'click', myFn )
  *   eventie.unbind( elem, 'click', myFn )
@@ -227,7 +227,7 @@ if ( typeof define === 'function' && define.amd ) {
   window.eventie = eventie;
 }
 
-})( this );
+})( window );
 
 /*!
  * docReady v1.0.4
@@ -2824,7 +2824,43 @@ function masonryDefinition( Outlayer, getSize ) {
     this.containerWidth = size && size.innerWidth;
   };
 
-  Masonry.prototype._getItemLayoutPosition = function( item ) {
+  /**
+   * Override the default method to retrieve the number of elements to consider for placement.
+   *
+   */
+  Masonry.prototype._getItemIndexToLayOut = function ( items ) {
+    var lookahead = this.options.lookAhead ? Math.max(1, this.options.lookAhead) : 1;
+
+    // INT_MAX
+    var bestMinimumY = 9007199254740992;
+    var bestIdx = null;
+    
+    for (var i = 0, len = items.length; (i < len) && (i < lookahead); i++)
+    {
+      var item = items[i];
+      var colSpan = this._getColSpan(item);
+      var colGroup = this._getColGroup( colSpan );
+        
+      // get the minimum Y value from the columns
+      var minimumY = Math.min.apply( Math, colGroup );
+        
+      if (minimumY < bestMinimumY)
+      {
+        bestIdx = i;
+        bestMinimumY = minimumY;
+      }
+    }
+    
+    return bestIdx;
+  };
+  
+  /**
+   * Get the number of columns an element spans
+   * 
+   * @param {Outlayer.Item} item The item / element to calculate column span for.
+   * @returns {Number} The number of columns spanned by this element.
+   **/
+  Masonry.prototype._getColSpan = function ( item ) {
     item.getSize();
     // how many columns does this brick span
     var remainder = item.size.outerWidth % this.columnWidth;
@@ -2832,6 +2868,12 @@ function masonryDefinition( Outlayer, getSize ) {
     // round if off by 1 pixel, otherwise use ceil
     var colSpan = Math[ mathMethod ]( item.size.outerWidth / this.columnWidth );
     colSpan = Math.min( colSpan, this.cols );
+    
+    return colSpan;
+  };
+  
+  Masonry.prototype._getItemLayoutPosition = function( item ) {
+    var colSpan = this._getColSpan(item);
 
     var colGroup = this._getColGroup( colSpan );
     // get the minimum Y value from the columns
@@ -2845,7 +2887,7 @@ function masonryDefinition( Outlayer, getSize ) {
     };
 
     // apply setHeight to necessary columns
-    var setHeight = minimumY + item.size.outerHeight;
+    var setHeight = minimumY + item.size.outerHeight + this.gutter;
     var setSpan = this.cols + 1 - colGroup.length;
     for ( var i = 0; i < setSpan; i++ ) {
       this.colYs[ shortColIndex + i ] = setHeight;
